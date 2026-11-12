@@ -118,18 +118,71 @@ architecture arch_imp of full_radio_v1_0_S00_AXI is
 	signal reg_data_out	:std_logic_vector(C_S_AXI_DATA_WIDTH-1 downto 0);
 	signal byte_index	: integer;
 	signal aw_en	: std_logic;
-
-COMPONENT dds_compiler_0
+    
+    -- User signals for DSP
+    signal fakeadc_valid_o, cs_dds_valid_o, cmpy_valid_o, fir1_ready, fir1_valid_o, fir2_ready, fir2_valid_o : std_logic;
+    signal fakeadc_data_o, cs_dds_data_o, catenated_adc_data, tuned_data : std_logic_vector(31 downto 0);
+    signal cmpy_data_o : std_logic_vector(79 downto 0);
+    signal fir1_data_o : std_logic_vector(79 downto 0);
+    signal fir2_data_o : std_logic_vector(47 downto 0);
+    signal shifted_data_i, shifted_data_q : signed(32 downto 0);
+    signal tuned_data_i, tuned_data_q : std_logic_vector(15 downto 0);
+    signal counter : unsigned(31 downto 0) := (others => '0');
+COMPONENT fakeadc_dds
   PORT (
     aclk : IN STD_LOGIC;
     aresetn : IN STD_LOGIC;
     s_axis_phase_tvalid : IN STD_LOGIC;
     s_axis_phase_tdata : IN STD_LOGIC_VECTOR(31 DOWNTO 0);
     m_axis_data_tvalid : OUT STD_LOGIC;
-    m_axis_data_tdata : OUT STD_LOGIC_VECTOR(31 DOWNTO 0)
+    m_axis_data_tdata : OUT STD_LOGIC_VECTOR(31 DOWNTO 0) 
   );
-    END COMPONENT;
+END COMPONENT;
 
+COMPONENT complex_sinusoid_dds
+  PORT (
+    aclk : IN STD_LOGIC;
+    aresetn : IN STD_LOGIC;
+    s_axis_phase_tvalid : IN STD_LOGIC;
+    s_axis_phase_tdata : IN STD_LOGIC_VECTOR(31 DOWNTO 0);
+    m_axis_data_tvalid : OUT STD_LOGIC;
+    m_axis_data_tdata : OUT STD_LOGIC_VECTOR(31 DOWNTO 0) 
+  );
+END COMPONENT;
+
+COMPONENT cmpy_0
+  PORT (
+    aclk : IN STD_LOGIC;
+    s_axis_a_tvalid : IN STD_LOGIC;
+    s_axis_a_tdata : IN STD_LOGIC_VECTOR(31 DOWNTO 0);
+    s_axis_b_tvalid : IN STD_LOGIC;
+    s_axis_b_tdata : IN STD_LOGIC_VECTOR(31 DOWNTO 0);
+    m_axis_dout_tvalid : OUT STD_LOGIC;
+    m_axis_dout_tdata : OUT STD_LOGIC_VECTOR(79 DOWNTO 0) 
+  );
+END COMPONENT;
+
+COMPONENT fir_compiler_0
+  PORT (
+    aclk : IN STD_LOGIC;
+    s_axis_data_tvalid : IN STD_LOGIC;
+    s_axis_data_tready : OUT STD_LOGIC;
+    s_axis_data_tdata : IN STD_LOGIC_VECTOR(31 DOWNTO 0);
+    m_axis_data_tvalid : OUT STD_LOGIC;
+    m_axis_data_tdata : OUT STD_LOGIC_VECTOR(79 DOWNTO 0) 
+  );
+END COMPONENT;
+
+COMPONENT fir_compiler_1
+  PORT (
+    aclk : IN STD_LOGIC;
+    s_axis_data_tvalid : IN STD_LOGIC;
+    s_axis_data_tready : OUT STD_LOGIC;
+    s_axis_data_tdata : IN STD_LOGIC_VECTOR(79 DOWNTO 0);
+    m_axis_data_tvalid : OUT STD_LOGIC;
+    m_axis_data_tdata : OUT STD_LOGIC_VECTOR(47 DOWNTO 0) 
+  );
+END COMPONENT;
 begin
 	-- I/O Connections assignments
 
@@ -259,13 +312,15 @@ begin
 	              end if;
 	            end loop;
 	          when b"11" =>
-	            for byte_index in 0 to (C_S_AXI_DATA_WIDTH/8-1) loop
-	              if ( S_AXI_WSTRB(byte_index) = '1' ) then
-	                -- Respective byte enables are asserted as per write strobes                   
-	                -- slave registor 3
-	                slv_reg3(byte_index*8+7 downto byte_index*8) <= S_AXI_WDATA(byte_index*8+7 downto byte_index*8);
-	              end if;
-	            end loop;
+	          -- Writes to timer register should do nothing. Comment out unused code.
+	            null;
+--	            for byte_index in 0 to (C_S_AXI_DATA_WIDTH/8-1) loop
+--	              if ( S_AXI_WSTRB(byte_index) = '1' ) then
+--	                -- Respective byte enables are asserted as per write strobes                   
+--	                -- slave registor 3
+--	                slv_reg3(byte_index*8+7 downto byte_index*8) <= S_AXI_WDATA(byte_index*8+7 downto byte_index*8);
+--	              end if;
+--	            end loop;
 	          when others =>
 	            slv_reg0 <= slv_reg0;
 	            slv_reg1 <= slv_reg1;
@@ -367,11 +422,11 @@ begin
 	      when b"00" =>
 	        reg_data_out <= slv_reg0;
 	      when b"01" =>
-	        reg_data_out <= x"DEADBEEF";
+	        reg_data_out <= slv_reg1;
 	      when b"10" =>
 	        reg_data_out <= slv_reg2;
 	      when b"11" =>
-	        reg_data_out <= slv_reg3;
+	        reg_data_out <= std_logic_vector(counter);
 	      when others =>
 	        reg_data_out  <= (others => '0');
 	    end case;
@@ -397,18 +452,91 @@ begin
 
 
 	-- Add user logic here
-
-your_instance_name : dds_compiler_0
+-- Instantiate Fake ADC DDS.
+fakeadc_dds_instance : fakeadc_dds
   PORT MAP (
     aclk => s_axi_aclk,
-    aresetn => '1',
+    aresetn => slv_reg2(0),
     s_axis_phase_tvalid => '1',
     s_axis_phase_tdata => slv_reg0,
-    m_axis_data_tvalid => m_axis_tvalid,
-    m_axis_data_tdata => m_axis_tdata
+    m_axis_data_tvalid => fakeadc_valid_o,
+    m_axis_data_tdata => fakeadc_data_o
   );
 
+-- Instantiate Complex Sinusoid DDS
+complex_sinusoid_dds_instance : complex_sinusoid_dds
+  PORT MAP (
+    aclk => s_axi_aclk,
+    aresetn => slv_reg2(0),
+    s_axis_phase_tvalid => '1',
+    s_axis_phase_tdata => slv_reg1,
+    m_axis_data_tvalid => cs_dds_valid_o,
+    m_axis_data_tdata => cs_dds_data_o
+  );
+  
+catenated_adc_data <= (x"0000" & fakeadc_data_o(15 downto 0));
 
+-- Instantiate complex multiplier
+cmpy_instance : cmpy_0
+  PORT MAP (
+    aclk => s_axi_aclk,
+    s_axis_a_tvalid => fakeadc_valid_o,
+    s_axis_a_tdata => catenated_adc_data,
+    s_axis_b_tvalid => cs_dds_valid_o,
+    s_axis_b_tdata => cs_dds_data_o,
+    m_axis_dout_tvalid => cmpy_valid_o,
+    m_axis_dout_tdata => cmpy_data_o
+  );
+  
+-- Scale output by shifting right 14 bits to compensate for fix16_14
+-- DDS scaling (14 fractional bits).
+shifted_data_i <= shift_right(signed(cmpy_data_o(32 downto 0)), 14);
+shifted_data_q <= shift_right(signed(cmpy_data_o(72 downto 40)), 14);
+
+-- Keep the lower 16 bits to match the 16-bit output width.
+tuned_data_i <= std_logic_vector(shifted_data_i(15 downto 0));
+tuned_data_q <= std_logic_vector(shifted_data_q(15 downto 0));
+
+-- Combine I (REAL) and Q (IMAG) outputs into a 32-bit bus.
+tuned_data <= (tuned_data_q & tuned_data_i);
+
+-- Instantiate first stage FIR
+fir1_instance : fir_compiler_0
+  PORT MAP (
+    aclk => s_axi_aclk,
+    s_axis_data_tvalid => cmpy_valid_o,
+    s_axis_data_tready => fir1_ready,
+    s_axis_data_tdata => tuned_data,
+    m_axis_data_tvalid => fir1_valid_o,
+    m_axis_data_tdata => fir1_data_o
+  );
+  
+-- Instantiate second stage FIR
+fir2_instance : fir_compiler_1
+  PORT MAP (
+    aclk => s_axi_aclk,
+    s_axis_data_tvalid => fir1_valid_o,
+    s_axis_data_tready => fir2_ready,
+    s_axis_data_tdata => fir1_data_o,
+    m_axis_data_tvalid => fir2_valid_o,
+    m_axis_data_tdata => fir2_data_o
+  );
+
+-- IMAG data goes on left channel and REAL data goes on right channel.
+m_axis_tdata <= (fir2_data_o(39 downto 24) & fir2_data_o(15 downto 0));
+m_axis_tvalid <= fir2_valid_o;
+
+-- 32-bit free running counter which is counting clocks
+process(s_axi_aclk)
+begin
+    if rising_edge(s_axi_aclk) then
+        if S_AXI_ARESETN = '0' then
+            counter <= (others => '0');
+        else
+            counter <= counter + 1;
+        end if;
+    end if;
+end process;
 	-- User logic ends
 
 end arch_imp;

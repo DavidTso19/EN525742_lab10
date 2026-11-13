@@ -2,9 +2,10 @@
   "schema": "xilinx.com:schema:json_instance:1.0",
   "ip_inst": {
     "xci_name": "fakeadc_dds",
+    "cell_name": "full_radio_v1_0_S00_AXI_inst/fakeadc_dds_instance",
     "component_reference": "xilinx.com:ip:dds_compiler:6.0",
     "ip_revision": "28",
-    "gen_directory": "../../../../vivado.gen/sources_1/ip/fakeadc_dds",
+    "gen_directory": "c:/users/tsoda/documents/en525742_vivado_projects/lab10/vivado/radio_periph_lab.tmp/full_radio_v1_0_project/full_radio_v1_0_project.gen/sources_1/ip/fakeadc_dds",
     "parameters": {
       "component_parameters": {
         "Component_Name": [ { "value": "fakeadc_dds", "resolve_type": "user", "usage": "all" } ],
@@ -179,11 +180,11 @@
         "IPCONTEXT": [ { "value": "IP_Flow" } ],
         "IPREVISION": [ { "value": "28" } ],
         "MANAGED": [ { "value": "TRUE" } ],
-        "OUTPUTDIR": [ { "value": "../../../../vivado.gen/sources_1/ip/fakeadc_dds" } ],
+        "OUTPUTDIR": [ { "value": "c:/users/tsoda/documents/en525742_vivado_projects/lab10/vivado/radio_periph_lab.tmp/full_radio_v1_0_project/full_radio_v1_0_project.gen/sources_1/ip/fakeadc_dds" } ],
         "SELECTEDSIMMODEL": [ { "value": "" } ],
         "SHAREDDIR": [ { "value": "." } ],
         "SWVERSION": [ { "value": "2025.2" } ],
-        "SYNTHESISFLOW": [ { "value": "OUT_OF_CONTEXT" } ]
+        "SYNTHESISFLOW": [ { "value": "GLOBAL" } ]
       }
     },
     "boundary": {
@@ -358,5 +359,5 @@
       }
     }
   },
-  "checksum": "8f935572"
+  "checksum": "9bea6d3d"
 }

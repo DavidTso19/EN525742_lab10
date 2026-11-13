@@ -4,7 +4,7 @@
     "xci_name": "cmpy_0",
     "component_reference": "xilinx.com:ip:cmpy:6.0",
     "ip_revision": "27",
-    "gen_directory": "../../../../vivado.gen/sources_1/ip/cmpy_0",
+    "gen_directory": "c:/users/tsoda/documents/en525742_vivado_projects/lab10/vivado/radio_periph_lab.tmp/full_radio_v1_0_project/full_radio_v1_0_project.gen/sources_1/ip/cmpy_0",
     "parameters": {
       "component_parameters": {
         "Component_Name": [ { "value": "cmpy_0", "resolve_type": "user", "usage": "all" } ],
@@ -84,11 +84,11 @@
         "IPCONTEXT": [ { "value": "IP_Flow" } ],
         "IPREVISION": [ { "value": "27" } ],
         "MANAGED": [ { "value": "TRUE" } ],
-        "OUTPUTDIR": [ { "value": "../../../../vivado.gen/sources_1/ip/cmpy_0" } ],
+        "OUTPUTDIR": [ { "value": "c:/users/tsoda/documents/en525742_vivado_projects/lab10/vivado/radio_periph_lab.tmp/full_radio_v1_0_project/full_radio_v1_0_project.gen/sources_1/ip/cmpy_0" } ],
         "SELECTEDSIMMODEL": [ { "value": "" } ],
         "SHAREDDIR": [ { "value": "." } ],
         "SWVERSION": [ { "value": "2025.2" } ],
-        "SYNTHESISFLOW": [ { "value": "OUT_OF_CONTEXT" } ]
+        "SYNTHESISFLOW": [ { "value": "GLOBAL" } ]
       }
     },
     "boundary": {
@@ -213,5 +213,5 @@
       }
     }
   },
-  "checksum": "d5cb78a2"
+  "checksum": "988bde48"
 }

@@ -120,7 +120,7 @@ architecture arch_imp of full_radio_v1_0_S00_AXI is
 	signal aw_en	: std_logic;
     
     -- User signals for DSP
-    signal fakeadc_valid_o, cs_dds_valid_o, cmpy_valid_o, fir1_ready, fir1_valid_o, fir2_ready, fir2_valid_o : std_logic;
+    signal fakeadc_valid_o, cs_dds_valid_o, cmpy_valid_o, fir1_ready, fir1_valid_o, fir2_ready, fir2_valid_o, dds_resetn : std_logic;
     signal fakeadc_data_o, cs_dds_data_o, catenated_adc_data, tuned_data : std_logic_vector(31 downto 0);
     signal cmpy_data_o : std_logic_vector(79 downto 0);
     signal fir1_data_o : std_logic_vector(79 downto 0);
@@ -452,11 +452,14 @@ begin
 
 
 	-- Add user logic here
+-- Invert DDS reset register since active-low
+dds_resetn <= not slv_reg2(0);
+
 -- Instantiate Fake ADC DDS.
 fakeadc_dds_instance : fakeadc_dds
   PORT MAP (
     aclk => s_axi_aclk,
-    aresetn => slv_reg2(0),
+    aresetn => dds_resetn,
     s_axis_phase_tvalid => '1',
     s_axis_phase_tdata => slv_reg0,
     m_axis_data_tvalid => fakeadc_valid_o,
@@ -467,7 +470,7 @@ fakeadc_dds_instance : fakeadc_dds
 complex_sinusoid_dds_instance : complex_sinusoid_dds
   PORT MAP (
     aclk => s_axi_aclk,
-    aresetn => slv_reg2(0),
+    aresetn => dds_resetn,
     s_axis_phase_tvalid => '1',
     s_axis_phase_tdata => slv_reg1,
     m_axis_data_tvalid => cs_dds_valid_o,
